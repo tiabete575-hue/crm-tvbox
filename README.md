@@ -1,36 +1,37 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TV Box CRM
 
-## Getting Started
+CRM para controlar clientes, vencimentos e renovações de planos de TV Box sem depender das etiquetas do WhatsApp.
 
-First, run the development server:
+## O que já funciona
+
+- Cadastro, edição, consulta e exclusão de clientes.
+- Cálculo automático do vencimento para planos anuais e semestrais.
+- Etiqueta automática pelo mês do vencimento.
+- Painel, lembretes, renovação e histórico de atendimento.
+- Atalho para conversar no WhatsApp com mensagem pronta.
+- Importação CSV/JSON, exportação CSV/JSON e prevenção de telefone duplicado.
+
+## Executar localmente
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+O CRM usa PostgreSQL no Neon por meio do driver oficial `@neondatabase/serverless`. A conexão local é carregada de `.env.local`, criado por `neon link` e ignorado pelo Git.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Preparar o Neon
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+O projeto está vinculado ao Neon `fancy-dream-92064266`, branch `production`. O esquema versionado está em `database/neon-schema.sql`, e a infraestrutura (Function e Object Storage) está declarada em `neon.ts`.
 
-## Learn More
+Antes de publicar o frontend na internet, adicione autenticação. O sistema não deve ficar aberto sem login.
 
-To learn more about Next.js, take a look at the following resources:
+## Formato de importação
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+CSV separado por vírgula ou ponto e vírgula. Cabeçalhos aceitos:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```text
+nome;telefone;plano;valor;data_ativacao;data_vencimento;observacoes;dispositivo;etiqueta
+```
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Também são aceitos `name`, `phone`, `plan_type` e os demais nomes internos em inglês. Registros sem nome/telefone ou com telefone já cadastrado são ignorados.

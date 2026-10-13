@@ -39,3 +39,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.neon
+crm.db
+
+# local agent tooling
+/.agents/
+/skills-lock.json
+
+# private customer import data
+/database/whatsapp-import.json.gz.b64
+/scripts/update-january-confirmed.mjs
