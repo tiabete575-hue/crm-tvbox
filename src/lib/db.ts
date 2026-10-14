@@ -1,10 +1,27 @@
-import { neon } from '@neondatabase/serverless';
+import { neon, type NeonQueryFunction } from '@neondatabase/serverless';
 
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL não configurada. Execute `neon link` ou defina .env.local.');
+let databaseClient: NeonQueryFunction<false, false> | undefined;
+
+function getDatabaseClient() {
+  if (databaseClient) return databaseClient;
+
+  const databaseUrl = process.env['DATABASE_URL'];
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL não configurada no ambiente de execução.');
+  }
+
+  databaseClient = neon(databaseUrl);
+  return databaseClient;
 }
 
-export const sql = neon(process.env.DATABASE_URL);
+export const sql = new Proxy((() => undefined) as unknown as NeonQueryFunction<false, false>, {
+  apply(_target, _thisArg, argumentsList) {
+    return Reflect.apply(getDatabaseClient(), undefined, argumentsList);
+  },
+  get(_target, property) {
+    return Reflect.get(getDatabaseClient(), property);
+  },
+});
 
 const MONTH_LABELS = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
