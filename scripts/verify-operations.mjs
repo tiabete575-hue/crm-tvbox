@@ -5,11 +5,16 @@ import { neon } from '@neondatabase/serverless';
 const base=process.env.CRM_TEST_URL||'http://localhost:3002';
 const cookie=(await new Response(process.stdin).text()).trim();
 if(!cookie)throw new Error('Informe a sessão de teste pela entrada padrão.');
+const cookieJar=new Map(cookie.split(';').map(part=>{const i=part.indexOf('=');return [part.slice(0,i).trim(),part.slice(i+1).trim()];}));
 const sql=neon(process.env.DATABASE_URL);
 const marker=`crm-integration-test:${randomUUID()}`;
 let clientId;
 async function api(path,body,authenticated=true){
- const response=await fetch(base+path,{method:body?'POST':'GET',headers:{...(authenticated?{Cookie:cookie}:{}),Origin:base,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
+ const response=await fetch(base+path,{method:body?'POST':'GET',headers:{...(authenticated?{Cookie:[...cookieJar].map(([key,value])=>`${key}=${value}`).join('; ')}:{}),Origin:base,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
+ if(authenticated)for(const header of response.headers.getSetCookie()){
+   const pair=header.split(';')[0];const index=pair.indexOf('=');
+   if(index>0){const key=pair.slice(0,index);const value=pair.slice(index+1);if(value)cookieJar.set(key,value);else cookieJar.delete(key);}
+ }
  return {status:response.status,data:await response.json()};
 }
 try{
