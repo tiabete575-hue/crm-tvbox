@@ -1,8 +1,11 @@
+import { authorize } from "@/lib/auth";
 import { NextRequest, NextResponse } from 'next/server';
 import { getAutomaticLabelId, sql, updateExpiredStatuses } from '@/lib/db';
 import { addMonths, format, parseISO } from 'date-fns';
 
 export async function GET(request: NextRequest) {
+  const denied = await authorize(); if (denied) return denied;
+
   try {
     await updateExpiredStatuses();
     const p = request.nextUrl.searchParams;
@@ -26,6 +29,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const denied = await authorize(); if (denied) return denied;
+
   try {
     const body = await request.json();
     if (!body.name?.trim() || !body.phone?.trim()) return NextResponse.json({ error: 'Nome e telefone são obrigatórios' }, { status: 400 });

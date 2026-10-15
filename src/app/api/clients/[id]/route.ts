@@ -1,14 +1,19 @@
+import { authorize } from "@/lib/auth";
 import { NextRequest, NextResponse } from 'next/server';
 import { getAutomaticLabelId, sql } from '@/lib/db';
 import { addMonths, format, parseISO } from 'date-fns';
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const denied = await authorize(); if (denied) return denied;
+
   const { id } = await params;
   const rows = await sql`SELECT c.*, l.name AS label_name, l.color AS label_color FROM clients c LEFT JOIN labels l ON l.id=c.label_id WHERE c.id=${id}`;
   return rows[0] ? NextResponse.json(rows[0]) : NextResponse.json({ error: 'Cliente não encontrado' }, { status: 404 });
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const denied = await authorize(); if (denied) return denied;
+
   try {
     const { id } = await params;
     const body = await request.json();
@@ -32,6 +37,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const denied = await authorize(); if (denied) return denied;
+
   const { id } = await params;
   await sql`DELETE FROM clients WHERE id=${id}`;
   return NextResponse.json({ success: true });

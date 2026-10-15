@@ -1,6 +1,9 @@
+import { authorize } from "@/lib/auth";
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
 export async function GET(request:NextRequest){
+  const denied = await authorize(); if (denied) return denied;
+
   const clients=await sql`SELECT c.*,l.name label_name,l.color label_color FROM clients c LEFT JOIN labels l ON l.id=c.label_id ORDER BY c.name`;
   if(request.nextUrl.searchParams.get('format')==='csv'){
     const fields=['name','phone','email','address','plan_type','plan_value','activation_date','expiration_date','status','label_name','notes','device_info'];

@@ -9,6 +9,7 @@ import {
   LayoutDashboard, Users, Tags, Bell, Upload, Menu, X, Tv
 } from 'lucide-react';
 import { ToastProvider } from '@/components/Toast';
+import { createAuthClient } from '@neondatabase/auth/next';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -23,6 +24,11 @@ export default function RootLayout({
   const navItems = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Clientes', href: '/clientes', icon: Users },
+    { name: 'Renovações', href: '/renovacoes', icon: Bell },
+    { name: 'Kanban', href: '/kanban', icon: LayoutDashboard },
+    { name: 'WhatsApp', href: '/mensagens', icon: Users },
+    { name: 'Automações', href: '/automacoes', icon: Bell },
+    { name: 'Financeiro', href: '/financeiro', icon: LayoutDashboard },
     { name: 'Etiquetas', href: '/etiquetas', icon: Tags },
     { name: 'Lembretes', href: '/lembretes', icon: Bell },
     { name: 'Importar/Exportar', href: '/importar', icon: Upload },
@@ -84,6 +90,7 @@ export default function RootLayout({
               </nav>
               
               <div className="p-4 border-t border-slate-700/50 text-xs text-center text-slate-500">
+                {pathname?.startsWith('/login') ? null : <button className="block w-full text-slate-300 mb-3" onClick={async()=>{await createAuthClient().signOut();window.location.assign('/login');}}>Sair da conta</button>}
                 &copy; {new Date().getFullYear()} TV Box CRM
               </div>
             </aside>

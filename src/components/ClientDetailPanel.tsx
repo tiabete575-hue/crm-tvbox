@@ -31,14 +31,6 @@ export default function ClientDetailPanel({ client, isOpen, onClose, onUpdate }:
     description: ''
   });
 
-  useEffect(() => {
-    if (isOpen && client.id) {
-      setDetailClient(client);
-      fetchInteractions();
-      fetchRenewals();
-    }
-  }, [isOpen, client.id]);
-
   const fetchInteractions = async () => {
     try {
       const res = await fetch(`/api/interactions/${client.id}`);
@@ -59,6 +51,14 @@ export default function ClientDetailPanel({ client, isOpen, onClose, onUpdate }:
       console.error('Failed to fetch renewals', err);
     }
   };
+
+  useEffect(() => {
+    if (isOpen && client.id) {
+      setDetailClient(client);
+      fetchInteractions();
+      fetchRenewals();
+    }
+  }, [isOpen, client.id]);
 
   const handleRenew = async () => {
     if (!confirm(`Confirmar a renovação de ${detailClient.name} a partir de hoje?`)) return;

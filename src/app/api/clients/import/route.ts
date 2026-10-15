@@ -1,7 +1,10 @@
+import { authorize } from "@/lib/auth";
 import { NextRequest,NextResponse } from 'next/server';
 import { getAutomaticLabelId,sql } from '@/lib/db';
 import { addMonths,format,parseISO } from 'date-fns';
 export async function POST(request:NextRequest){
+  const denied = await authorize(); if (denied) return denied;
+
   try{
     const clients=await request.json();if(!Array.isArray(clients))return NextResponse.json({error:'Formato inválido'},{status:400});let count=0,skipped=0;
     const labels=await sql`SELECT id,name FROM labels`;

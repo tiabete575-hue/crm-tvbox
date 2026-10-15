@@ -1,7 +1,10 @@
+import { authorize } from "@/lib/auth";
 import { NextResponse } from 'next/server';
 import { sql, updateExpiredStatuses } from '@/lib/db';
 
 export async function GET() {
+  const denied = await authorize(); if (denied) return denied;
+
   try {
     await updateExpiredStatuses();
     const [counts, revenue, plans, expirations, recent] = await Promise.all([

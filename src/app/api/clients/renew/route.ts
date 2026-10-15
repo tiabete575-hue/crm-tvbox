@@ -1,7 +1,10 @@
+import { authorize } from "@/lib/auth";
 import { NextRequest, NextResponse } from 'next/server';
 import { getAutomaticLabelId, sql } from '@/lib/db';
 import { addMonths, format, isValid, parseISO } from 'date-fns';
 export async function POST(request:NextRequest){
+  const denied = await authorize(); if (denied) return denied;
+
   try{
     const body=await request.json();const id=body.client_id??body.id;if(!id)return NextResponse.json({error:'ID do cliente é obrigatório'},{status:400});
     const client=(await sql`SELECT * FROM clients WHERE id=${id}`)[0];if(!client)return NextResponse.json({error:'Cliente não encontrado'},{status:404});
@@ -16,7 +19,9 @@ export async function POST(request:NextRequest){
           VALUES(${id},${activation},${renewalDate.getFullYear()},${client.activation_date},${client.expiration_date},${activation},${expiration},${client.plan_type},${body.notes||null}) RETURNING id`,
       sql`DELETE FROM client_labels WHERE client_id=${id}`,
       sql`INSERT INTO client_labels(client_id,label_id) VALUES(${id},${label}) ON CONFLICT DO NOTHING`,
-      sql`INSERT INTO interactions(client_id,type,description) VALUES(${id},'anotacao',${`Plano renovado em ${activation}; novo vencimento: ${expiration||'vitalício'}`}) RETURNING id`
+      sql`INSERT INTO interactions(client_id,type,description) VALUES(${id},'anotacao',${`Plano renovado em ${activation}; novo vencimento: ${expiration||'vitalício'}`}) RETURNING id`,
+      sql`UPDATE crm_tasks SET stage='renovado',updated_at=now() WHERE client_id=${id} AND cycle_date=${client.expiration_date}`,
+      sql`UPDATE crm_reminders SET completed_at=now() WHERE client_id=${id} AND completed_at IS NULL`
     ]);
     return NextResponse.json(result[0][0]);
   }catch(error){console.error(error);return NextResponse.json({error:'Erro ao renovar cliente'},{status:500});}

@@ -1,12 +1,17 @@
+import { authorize } from "@/lib/auth";
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@/lib/db';
 
 export async function GET() {
+  const denied = await authorize(); if (denied) return denied;
+
   const rows = await sql`SELECT l.*, COUNT(cl.client_id)::int AS client_count FROM labels l LEFT JOIN client_labels cl ON cl.label_id=l.id GROUP BY l.id ORDER BY l.id`;
   return NextResponse.json(rows);
 }
 
 export async function POST(request: NextRequest) {
+  const denied = await authorize(); if (denied) return denied;
+
   try {
     const body = await request.json();
     if (!body.name || !body.color) return NextResponse.json({ error: 'Nome e cor são obrigatórios' }, { status: 400 });
