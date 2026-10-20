@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS clients (
   source_ref TEXT,
   email TEXT,
   address TEXT,
-  plan_type TEXT NOT NULL DEFAULT 'anual' CHECK (plan_type IN ('anual', 'semestral', 'vitalicio')),
+  plan_type TEXT NOT NULL DEFAULT 'anual' CHECK (plan_type IN ('mensal', 'trimestral', 'semestral', 'anual', 'vitalicio')),
   plan_value NUMERIC(12,2) NOT NULL DEFAULT 0 CHECK (plan_value >= 0),
   activation_date DATE,
   expiration_date DATE,
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS renewals (
   previous_expiration_date DATE,
   new_activation_date DATE NOT NULL,
   new_expiration_date DATE,
-  plan_type TEXT NOT NULL CHECK (plan_type IN ('anual', 'semestral', 'vitalicio')),
+  plan_type TEXT NOT NULL CHECK (plan_type IN ('mensal', 'trimestral', 'semestral', 'anual', 'vitalicio')),
   notes TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

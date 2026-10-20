@@ -1,6 +1,6 @@
 import { authorize } from "@/lib/auth";
 import { NextRequest, NextResponse } from 'next/server';
-import { getAutomaticLabelId, sql, updateExpiredStatuses } from '@/lib/db';
+import { ensurePlanTypesSupport, getAutomaticLabelId, getPlanMonths, sql, updateExpiredStatuses, VALID_PLAN_TYPES } from '@/lib/db';
 import { addMonths, format, parseISO } from 'date-fns';
 
 export async function GET(request: NextRequest) {
@@ -14,10 +14,11 @@ export async function GET(request: NextRequest) {
     const plan = p.get('plan_type');
     const status = p.get('status');
     const rows = await sql`
-      SELECT c.*, l.name AS label_name, l.color AS label_color
+      SELECT c.*, l.name AS label_name, l.color AS label_color,
+        (c.expiration_date - (now() AT TIME ZONE 'America/Sao_Paulo')::date)::int AS days_left
       FROM clients c LEFT JOIN labels l ON l.id = c.label_id
-      WHERE (c.name ILIKE ${search} OR COALESCE(c.email, '') ILIKE ${search} OR c.phone ILIKE ${search})
-        AND (${label}::bigint IS NULL OR EXISTS (SELECT 1 FROM client_labels cl WHERE cl.client_id=c.id AND cl.label_id=${label}::bigint))
+      WHERE (c.name ILIKE ${search} OR COALESCE(c.email, '') ILIKE ${search} OR COALESCE(c.phone, '') ILIKE ${search} OR COALESCE(c.device_info, '') ILIKE ${search})
+        AND (${label}::bigint IS NULL OR c.label_id = ${label}::bigint OR EXISTS (SELECT 1 FROM client_labels cl WHERE cl.client_id=c.id AND cl.label_id=${label}::bigint))
         AND (${plan}::text IS NULL OR c.plan_type = ${plan})
         AND (${status}::text IS NULL OR c.status = ${status})
       ORDER BY c.created_at DESC`;
@@ -32,11 +33,14 @@ export async function POST(request: NextRequest) {
   const denied = await authorize(); if (denied) return denied;
 
   try {
+    await ensurePlanTypesSupport();
     const body = await request.json();
     if (!body.name?.trim() || !body.phone?.trim()) return NextResponse.json({ error: 'Nome e telefone são obrigatórios' }, { status: 400 });
-    const planType = ['anual', 'semestral', 'vitalicio'].includes(body.plan_type) ? body.plan_type : 'anual';
+    const planType = (VALID_PLAN_TYPES as readonly string[]).includes(body.plan_type) ? body.plan_type : 'anual';
     let expiration = body.expiration_date || null;
-    if (!expiration && body.activation_date && planType !== 'vitalicio') expiration = format(addMonths(parseISO(body.activation_date), planType === 'semestral' ? 6 : 12), 'yyyy-MM-dd');
+    if (!expiration && body.activation_date && planType !== 'vitalicio') {
+      expiration = format(addMonths(parseISO(body.activation_date), getPlanMonths(planType)), 'yyyy-MM-dd');
+    }
     const labelId = body.label_id || await getAutomaticLabelId(expiration, planType);
     const rows = await sql`
       INSERT INTO clients (name, phone, email, address, plan_type, plan_value, activation_date, expiration_date, status, label_id, notes, device_info)

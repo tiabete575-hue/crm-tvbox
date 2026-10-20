@@ -1,6 +1,6 @@
 import { authorize } from "@/lib/auth";
 import { NextRequest, NextResponse } from 'next/server';
-import { getAutomaticLabelId, sql } from '@/lib/db';
+import { ensurePlanTypesSupport, getAutomaticLabelId, getPlanMonths, sql } from '@/lib/db';
 import { addMonths, format, parseISO } from 'date-fns';
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -15,6 +15,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   const denied = await authorize(); if (denied) return denied;
 
   try {
+    await ensurePlanTypesSupport();
     const { id } = await params;
     const body = await request.json();
     const current = (await sql`SELECT * FROM clients WHERE id=${id}`)[0];
@@ -22,7 +23,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const plan = body.plan_type ?? current.plan_type;
     const activation = body.activation_date ?? current.activation_date;
     let expiration = body.expiration_date ?? current.expiration_date;
-    if ((body.plan_type || body.activation_date) && activation) expiration = plan === 'vitalicio' ? null : format(addMonths(parseISO(String(activation).slice(0, 10)), plan === 'semestral' ? 6 : 12), 'yyyy-MM-dd');
+    if ((body.plan_type || body.activation_date) && activation && !body.expiration_date) {
+      expiration = plan === 'vitalicio' ? null : format(addMonths(parseISO(String(activation).slice(0, 10)), getPlanMonths(plan)), 'yyyy-MM-dd');
+    }
     const label = body.label_id !== undefined ? body.label_id : await getAutomaticLabelId(expiration ? String(expiration).slice(0, 10) : null, plan);
     const rows = await sql`
       UPDATE clients SET name=${body.name ?? current.name}, phone=${body.phone ?? current.phone}, email=${body.email ?? current.email}, address=${body.address ?? current.address},

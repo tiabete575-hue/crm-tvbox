@@ -1,10 +1,12 @@
+export type PlanType = 'mensal' | 'trimestral' | 'semestral' | 'anual' | 'vitalicio';
+
 export interface Client {
   id: number;
   name: string;
   phone: string | null;
   email: string;
   address: string;
-  plan_type: 'anual' | 'semestral' | 'vitalicio';
+  plan_type: PlanType;
   plan_value: number;
   activation_date: string;
   expiration_date: string;
@@ -14,6 +16,7 @@ export interface Client {
   label_color?: string;
   notes: string;
   device_info: string;
+  days_left?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -43,7 +46,7 @@ export interface Renewal {
   previous_expiration_date: string | null;
   new_activation_date: string;
   new_expiration_date: string | null;
-  plan_type: Client['plan_type'];
+  plan_type: PlanType;
   notes: string | null;
   created_at: string;
 }
@@ -52,10 +55,17 @@ export interface DashboardStats {
   total_clients: number;
   active_clients: number;
   expiring_this_month: number;
+  expiring_7_days?: number;
   expired_clients: number;
   lifetime_clients: number;
   total_monthly_revenue: number;
+  received_this_month?: number;
+  pending_this_month?: number;
+  overdue_total?: number;
+  pending_reminders_count?: number;
   clients_by_plan: { plan_type: string; count: number }[];
   expirations_by_month: { month: string; count: number }[];
+  kanban_summary?: { stage: string; count: number; total_value: number }[];
+  urgent_renewals?: Client[];
   recent_clients: Client[];
 }

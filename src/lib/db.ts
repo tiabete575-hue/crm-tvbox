@@ -1,6 +1,7 @@
 import { neon, type NeonQueryFunction } from '@neondatabase/serverless';
 
 let databaseClient: NeonQueryFunction<false, false> | undefined;
+let schemaChecked = false;
 
 function getDatabaseClient() {
   if (databaseClient) return databaseClient;
@@ -27,6 +28,35 @@ const MONTH_LABELS = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
 ];
+
+export const VALID_PLAN_TYPES = ['mensal', 'trimestral', 'semestral', 'anual', 'vitalicio'] as const;
+
+export function getPlanMonths(planType: string): number {
+  switch (planType) {
+    case 'mensal':
+      return 1;
+    case 'trimestral':
+      return 3;
+    case 'semestral':
+      return 6;
+    case 'anual':
+    default:
+      return 12;
+  }
+}
+
+export async function ensurePlanTypesSupport() {
+  if (schemaChecked) return;
+  schemaChecked = true;
+  try {
+    await sql`ALTER TABLE clients DROP CONSTRAINT IF EXISTS clients_plan_type_check`;
+    await sql`ALTER TABLE clients ADD CONSTRAINT clients_plan_type_check CHECK (plan_type IN ('mensal', 'trimestral', 'semestral', 'anual', 'vitalicio'))`;
+    await sql`ALTER TABLE renewals DROP CONSTRAINT IF EXISTS renewals_plan_type_check`;
+    await sql`ALTER TABLE renewals ADD CONSTRAINT renewals_plan_type_check CHECK (plan_type IN ('mensal', 'trimestral', 'semestral', 'anual', 'vitalicio'))`;
+  } catch {
+    // Ignore if constraints are already updated or user has restricted DDL permissions
+  }
+}
 
 export async function updateExpiredStatuses() {
   await sql`
